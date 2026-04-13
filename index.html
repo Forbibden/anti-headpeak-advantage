@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Raycast Marker UI</title>
+    <style>
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: transparent;
+        }
+
+        #hit-marker {
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            transform: translate(-50%, -50%) scale(0.8);
+            display: none;
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0;
+        }
+
+        #hit-marker::before,
+        #hit-marker::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+
+        #hit-marker::before {
+            background:
+                linear-gradient(#e74c3c, #e74c3c) center/2px 100% no-repeat,
+                linear-gradient(#e74c3c, #e74c3c) center/100% 2px no-repeat;
+            transform: rotate(45deg);
+        }
+
+        #hit-marker::after {
+            background:
+                linear-gradient(#e74c3c, #e74c3c) center/2px 100% no-repeat,
+                linear-gradient(#e74c3c, #e74c3c) center/100% 2px no-repeat;
+            transform: rotate(-45deg);
+        }
+
+        .hit-show {
+            animation: hitPop 0.25s ease-out;
+        }
+
+        @keyframes hitPop {
+            0% {
+                transform: translate(-50%, -50%) scale(0.5);
+                opacity: 0;
+            }
+
+            50% {
+                transform: translate(-50%, -50%) scale(1.2);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="hit-marker"> </div>
+
+    <script>
+        let markerTimeout;
+        const markerElement = document.getElementById('hit-marker');
+
+        function drawMarkerAt(x, y) {
+            markerElement.style.left = x + 'px';
+            markerElement.style.top = y + 'px';
+
+            markerElement.classList.remove('hit-show');
+            void markerElement.offsetWidth;
+
+            markerElement.style.display = 'block';
+            markerElement.classList.add('hit-show');
+
+            clearTimeout(markerTimeout);
+
+            markerTimeout = setTimeout(() => {
+                markerElement.style.display = 'none';
+            }, 250);
+        }
+    </script>
+</body>
+
+</html>
