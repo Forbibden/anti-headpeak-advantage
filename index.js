@@ -1,47 +1,74 @@
 const localPlayer = mp.players.local;
-let browser = mp.browsers.new('package://cef/head-glitch/index.html');
-const MAX_WALL_DISTANCE = 1.5;
+let browser = null;
 
-function getDistance(pos1, pos2) {
-    return Math.sqrt(
-        Math.pow(pos1.x - pos2.x, 2) +
-        Math.pow(pos1.y - pos2.y, 2) +
-        Math.pow(pos1.z - pos2.z, 2)
+setTimeout(() => {
+    browser = mp.browsers.new('package://cef/head-glitch/index.html');
+}, 500);
+
+const MAX_WALL_DISTANCE = 2;
+const INPUT_ATTACK = 24;
+const INPUT_ATTACK2 = 257;
+const INPUT_AIM = 25;
+
+let lastUpdate = 0;
+
+function rotationToDirection(rotation) {
+    const z = rotation.z * (Math.PI / 180.0);
+    const x = rotation.x * (Math.PI / 180.0);
+    const num = Math.abs(Math.cos(x));
+    return new mp.Vector3(
+        -Math.sin(z) * num,
+        Math.cos(z) * num,
+        Math.sin(x)
     );
 }
 
-mp.events.add('playerWeaponShot', (targetPosition, targetEntity) => {
-    try {
-        // Bone ID 31086 (Baş/Kafa). Silah namlusu duvardan geçse bile baş geçemez. 6286 (El)
-        const headPos = localPlayer.getBoneCoords(6286, 0, 0, 0);
+mp.events.add('render', () => {
+    if (!localPlayer.weapon || localPlayer.vehicle) return;
 
-        const raycast = mp.raycasting.testPointToPoint(
-            headPos,
-            targetPosition,
-            localPlayer,
-            17
-        );
+    const isAiming = mp.game.controls.isControlPressed(0, INPUT_AIM) || mp.game.controls.isDisabledControlPressed(0, INPUT_AIM);
+    const isShooting = mp.game.controls.isControlPressed(0, INPUT_ATTACK) || mp.game.controls.isDisabledControlPressed(0, INPUT_ATTACK) ||
+        mp.game.controls.isControlPressed(0, INPUT_ATTACK2) || mp.game.controls.isDisabledControlPressed(0, INPUT_ATTACK2);
 
-        if (raycast) {
-            const hitPos = raycast.position;
-            const distance = getDistance(hitPos, targetPosition);
+    // 6286 (PH_R_Hand - Sağ El)
+    const handPos = localPlayer.getBoneCoords(6286, 0.1, 0, 0);
 
-            mp.gui.chat.push(`[DEBUG] Hedefe Kalan Mesafe: ${distance.toFixed(2)} metre`);
+    const gameplayCam = mp.cameras.new('gameplay');
+    const camRot = gameplayCam.getRot(2);
+    const dir = rotationToDirection(camRot);
 
-            if (distance > MAX_WALL_DISTANCE) {
-                const screenPos = mp.game.graphics.world3dToScreen2d(hitPos.x, hitPos.y, hitPos.z);
+    const targetPos = new mp.Vector3(
+        handPos.x + (dir.x * MAX_WALL_DISTANCE),
+        handPos.y + (dir.y * MAX_WALL_DISTANCE),
+        handPos.z + (dir.z * MAX_WALL_DISTANCE)
+    );
+
+    const raycast = mp.raycasting.testPointToPoint(handPos, targetPos, localPlayer, 17);
+
+    if (raycast) {
+        mp.game.controls.disableControlAction(0, INPUT_ATTACK, true);
+        mp.game.controls.disableControlAction(0, INPUT_ATTACK2, true);
+        mp.game.controls.disableControlAction(0, 142, true);
+
+        if (Date.now() - lastUpdate > 50 && browser) {
+            if (isAiming || isShooting) {
+                const screenPos = mp.game.graphics.world3dToScreen2d(raycast.position.x, raycast.position.y, raycast.position.z);
                 if (screenPos) {
-                    const resolution = mp.game.graphics.getScreenActiveResolution(0, 0);
-                    const pixelX = screenPos.x * resolution.x;
-                    const pixelY = screenPos.y * resolution.y;
-
-                    browser.execute(`drawMarkerAt(${pixelX}, ${pixelY});`);
+                    const res = mp.game.graphics.getScreenActiveResolution(0, 0);
+                    const px = screenPos.x * res.x;
+                    const py = screenPos.y * res.y;
+                    browser.execute(`updateMarker(${px}, ${py});`);
+                    lastUpdate = Date.now();
                 }
-                return true;
+            } else {
+                browser.execute('hideMarker()');
+                lastUpdate = Date.now();
             }
         }
-    } catch (error) {
-
-        mp.gui.chat.push(`[HATA] Raycast Hatası: ${error.message}`);
+    } else {
+        if (Date.now() - lastUpdate > 100 && browser) {
+            browser.execute('hideMarker()');
+            lastUpdate = Date.now();
+        }
     }
 });

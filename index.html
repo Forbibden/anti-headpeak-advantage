@@ -1,102 +1,71 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Raycast Marker UI</title>
     <style>
-        body,
-        html {
-            margin: 0;
-            padding: 0;
-            width: 100vw;
-            height: 100vh;
+        body, html {
+            margin: 0; padding: 0;
+            width: 100vw; height: 100vh;
             overflow: hidden;
             background: transparent;
         }
 
         #hit-marker {
             position: absolute;
-            width: 18px;
-            height: 18px;
-            transform: translate(-50%, -50%) scale(0.8);
+            width: 20px; 
+            height: 20px;
+            transform: translate(-50%, -50%);
             display: none;
             pointer-events: none;
             z-index: 9999;
-            opacity: 0;
         }
 
-        #hit-marker::before,
-        #hit-marker::after {
+        #hit-marker::before, #hit-marker::after {
             content: '';
             position: absolute;
-            width: 100%;
-            height: 100%;
+            width: 100%; 
+            height: 3px;
+            background-color: rgba(231, 76, 60, 0.9);
+            top: 50%; 
+            left: 0;
+            margin-top: -1.5px;
+            border-radius: 2px;
         }
 
         #hit-marker::before {
-            background:
-                linear-gradient(#e74c3c, #e74c3c) center/2px 100% no-repeat,
-                linear-gradient(#e74c3c, #e74c3c) center/100% 2px no-repeat;
             transform: rotate(45deg);
         }
 
         #hit-marker::after {
-            background:
-                linear-gradient(#e74c3c, #e74c3c) center/2px 100% no-repeat,
-                linear-gradient(#e74c3c, #e74c3c) center/100% 2px no-repeat;
             transform: rotate(-45deg);
-        }
-
-        .hit-show {
-            animation: hitPop 0.25s ease-out;
-        }
-
-        @keyframes hitPop {
-            0% {
-                transform: translate(-50%, -50%) scale(0.5);
-                opacity: 0;
-            }
-
-            50% {
-                transform: translate(-50%, -50%) scale(1.2);
-                opacity: 1;
-            }
-
-            100% {
-                transform: translate(-50%, -50%) scale(1);
-                opacity: 1;
-            }
         }
     </style>
 </head>
-
 <body>
 
-    <div id="hit-marker"> </div>
+    <div id="hit-marker"></div>
 
     <script>
-        let markerTimeout;
-        const markerElement = document.getElementById('hit-marker');
+        const marker = document.getElementById('hit-marker');
+        let hideTimeout;
 
-        function drawMarkerAt(x, y) {
-            markerElement.style.left = x + 'px';
-            markerElement.style.top = y + 'px';
+        function updateMarker(x, y) {
+            marker.style.left = x + 'px';
+            marker.style.top = y + 'px';
+            marker.style.display = 'block';
 
-            markerElement.classList.remove('hit-show');
-            void markerElement.offsetWidth;
+            // Kısa süre sonra otomatik gizle
+            clearTimeout(hideTimeout);
+            hideTimeout = setTimeout(() => {
+                marker.style.display = 'none';
+            }, 100);
+        }
 
-            markerElement.style.display = 'block';
-            markerElement.classList.add('hit-show');
-
-            clearTimeout(markerTimeout);
-
-            markerTimeout = setTimeout(() => {
-                markerElement.style.display = 'none';
-            }, 250);
+        function hideMarker() {
+            marker.style.display = 'none';
         }
     </script>
 </body>
-
 </html>
